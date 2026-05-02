@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CheapMap</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #2ecc40;
+    --green-dark: #1a7a26;
+    --green-light: #a8f0b0;
+    --orange: #ff6b00;
+    --bg: #f5f7f0;
+    --card: #ffffff;
+    --text: #1a2e1a;
+    --gray: #6b7a6b;
+    --border: #d0e0d0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--green-dark);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+  }
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px;
+    letter-spacing: 2px;
+    color: var(--green-light);
+  }
+  .logo span { color: #fff; }
+  .lang-select {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: #fff;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+  }
+  .lang-select option { color: #000; background: #fff; }
+
+  /* CATEGORY BAR */
+  .cat-bar {
+    background: #fff;
+    display: flex;
+    gap: 6px;
+    padding: 8px 12px;
+    overflow-x: auto;
+    flex-shrink: 0;
+    border-bottom: 2px solid var(--border);
+    scrollbar-width: none;
+  }
+  .cat-bar::-webkit-scrollbar { display: none; }
+  .cat-btn {
+    border: 2px solid var(--border);
+    background: #fff;
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+    color: var(--text);
+  }
+  .cat-btn.active, .cat-btn:hover {
+    background: var(--green);
+    border-color: var(--green);
+    color: #fff;
+  }
+
+  /* MAP */
+  .map-area {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: #e8f0e8;
+    cursor: default;
+  }
+  .map-bg {
+    width: 100%; height: 100%;
+    background:
+      linear-gradient(rgba(200,220,200,0.5) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(200,220,200,0.5) 1px, transparent 1px),
+      linear-gradient(135deg, #e0ece0 0%, #d0e4d0 50%, #c8dcc8 100%);
+    background-size: 40px 40px, 40px 40px, 100% 100%;
+  }
+  .road-h { position:absolute; background:#fff; opacity:0.7; height:12px; left:0; right:0; }
+  .road-v { position:absolute; background:#fff; opacity:0.7; width:12px; top:0; bottom:0; }
+
+  /* PIN */
+  .pin {
+    position: absolute;
+    transform: translate(-50%, -100%);
+    cursor: pointer;
+    z-index: 10;
+    animation: dropIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes dropIn {
+    from { transform: translate(-50%, -200%); opacity:0; }
+    to   { transform: translate(-50%, -100%); opacity:1; }
+  }
+  .pin-icon {
+    width: 36px; height: 44px;
+    background: var(--green);
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+    display: flex; align-items: center; justify-content: center;
+    border: 3px solid #fff;
+    transition: transform 0.2s;
+  }
+  .pin:hover .pin-icon { transform: rotate(-45deg) scale(1.15); }
+  .pin-icon span { transform: rotate(45deg); font-size: 15px; }
+  .pin-label {
+    position: absolute; top: -10px; left: 50%;
+    transform: translateX(-50%);
+    background: var(--green-dark); color: #fff;
+    font-size: 10px; font-weight: 700;
+    padding: 2px 6px; border-radius: 10px;
+    white-space: nowrap;
+  }
+  .pin.hidden-pin .pin-icon { background: #bbb; border-color: #999; }
+  .pin.hidden-pin .pin-label { background: #999; }
+
+  /* POPUP */
+  .popup {
+    position: absolute; z-index: 100;
+    width: 300px;
+    background: var(--card);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    border: 2px solid var(--green-light);
+    overflow: hidden;
+    animation: popIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    user-select: none;
+  }
+  @keyframes popIn {
+    from { transform: scale(0.8); opacity:0; }
+    to   { transform: scale(1); opacity:1; }
+  }
+  .popup-header {
+    background: var(--green-dark); color: #fff;
+    padding: 10px 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: move;
+  }
+  .popup-cat-badge {
+    background: var(--green); color: #fff;
+    font-size: 11px; font-weight: 700;
+    padding: 2px 8px; border-radius: 10px;
+  }
+  .popup-close {
+    background: none; border: none; color: #fff;
+    font-size: 20px; cursor: pointer; line-height: 1;
+    opacity: 0.8; transition: opacity 0.2s;
+  }
+  .popup-close:hover { opacity: 1; }
+  .popup-body { padding: 14px; }
+  .popup-shop-name { font-size: 16px; font-weight: 800; margin-bottom: 4px; }
+  .popup-price { font-size: 20px; font-weight: 800; color: var(--green-dark); margin-bottom: 8px; }
+  .popup-desc {
+    font-size: 12px; color: var(--gray); line-height: 1.6;
+    margin-bottom: 10px;
+    border-left: 3px solid var(--green-light); padding-left: 8px;
+  }
+  .popup-contact { display: flex; gap: 6px; margin-bottom: 10px; }
+  .contact-btn {
+    flex: 1; padding: 7px; border: none;
+    border-radius: 8px; font-size: 12px; font-weight: 700;
+    cursor: pointer; font-family: 'Inter', sans-serif;
+    transition: opacity 0.2s;
+  }
+  .contact-btn:hover { opacity: 0.8; }
+  .btn-tel { background: #e8f5e9; color: var(--green-dark); }
+  .btn-sns { background: #fff3e0; color: #e65100; }
+  .popup-actions { display: flex; gap: 6px; }
+  .like-btn, .dislike-btn {
+    flex: 1; padding: 7px;
+    border: 2px solid var(--border); border-radius: 8px;
+    background: #fff; font-size: 13px; font-weight: 700;
+    cursor: pointer; font-family: 'Inter', sans-serif;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+    transition: all 0.2s;
+  }
+  .like-btn:hover    { border-color: var(--green); color: var(--green-dark); background: #f0fff0; }
+  .dislike-btn:hover { border-color: #e53935; color: #e53935; background: #fff5f5; }
+  .owner-btns {
+    display: flex; gap: 6px;
+    margin-top: 8px; padding-top: 8px;
+    border-top: 1px solid var(--border);
+  }
+  .edit-btn {
+    flex: 1; padding: 6px; border: none;
+    border-radius: 8px; font-size: 12px; font-weight: 700;
+    cursor: pointer; font-family: 'Inter', sans-serif;
+  }
+  .btn-edit   { background: #e3f2fd; color: #1565c0; }
+  .btn-delete { background: #ffebee; color: #c62828; }
+
+  /* PIN FORM */
+  .pin-form {
+    position: absolute; z-index: 200;
+    width: 320px;
+    background: var(--card);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+    border: 2px solid var(--green);
+    overflow: hidden;
+    animation: popIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .form-header {
+    background: var(--green); color: #fff;
+    padding: 12px 16px; font-weight: 800; font-size: 15px;
+    display: flex; justify-content: space-between; align-items: center;
+    cursor: move;
+  }
+  .form-body { padding: 16px; }
+  .form-group { margin-bottom: 11px; }
+  .form-group label {
+    display: block; font-size: 11px; font-weight: 700;
+    color: var(--gray); margin-bottom: 4px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .form-group input,
+  .form-group textarea,
+  .form-group select {
+    width: 100%; border: 2px solid var(--border);
+    border-radius: 8px; padding: 8px 10px;
+    font-size: 13px; font-family: 'Inter', sans-serif;
+    color: var(--text); background: #fff;
+    transition: border-color 0.2s; resize: none;
+  }
+  .form-group input:focus,
+  .form-group textarea:focus,
+  .form-group select:focus { outline: none; border-color: var(--green); }
+  .char-count { text-align: right; font-size: 11px; color: var(--gray); margin-top: 3px; }
+  .char-count.over { color: #e53935; }
+  .contact-required { font-size: 11px; color: var(--orange); font-weight: 700; margin-bottom: 6px; }
+  .form-row { display: flex; gap: 8px; }
+  .form-row .form-group { flex: 1; }
+  .submit-btn {
+    width: 100%; padding: 12px;
+    background: var(--green-dark); color: #fff;
+    border: none; border-radius: 10px;
+    font-size: 15px; font-weight: 800;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer; transition: background 0.2s;
+    margin-top: 4px; letter-spacing: 0.5px;
+  }
+  .submit-btn:hover { background: var(--green); }
+
+  /* ENTRY POPUP */
+  .entry-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.65);
+    z-index: 999;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .entry-popup {
+    background: #fff; border-radius: 20px;
+    width: 320px; overflow: hidden;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.35);
+    animation: popIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .entry-header {
+    background: var(--green-dark);
+    padding: 24px 20px; text-align: center;
+  }
+  .entry-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 40px; letter-spacing: 3px;
+    color: var(--green-light);
+  }
+  .entry-logo span { color: #fff; }
+  .entry-tagline {
+    color: rgba(255,255,255,0.75);
+    font-size: 12px; margin-top: 4px;
+    font-weight: 600; letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .entry-body { padding: 20px; }
+  .entry-rule {
+    display: flex; align-items: flex-start;
+    gap: 10px; margin-bottom: 14px;
+    font-size: 13px; line-height: 1.5; color: var(--text);
+  }
+  .entry-rule-num {
+    background: var(--green); color: #fff;
+    width: 22px; height: 22px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 800;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .entry-start {
+    width: 100%; padding: 14px;
+    background: var(--green); color: #fff;
+    border: none; border-radius: 10px;
+    font-size: 16px; font-weight: 800;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer; margin-top: 4px;
+    transition: background 0.2s; letter-spacing: 1px;
+  }
+  .entry-start:hover { background: var(--green-dark); }
+
+  /* FAB */
+  .fab {
+    position: absolute; bottom: 24px; right: 20px; z-index: 50;
+    background: var(--green-dark); color: #fff;
+    border: none; border-radius: 50px;
+    padding: 14px 20px;
+    font-size: 14px; font-weight: 800;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(46,204,64,0.4);
+    display: flex; align-items: center; gap: 8px;
+    transition: all 0.2s; letter-spacing: 0.5px;
+  }
+  .fab:hover { background: var(--green); transform: scale(1.05); }
+  .fab.active { background: var(--orange); }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 80px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.82); color: #fff;
+    padding: 10px 20px; border-radius: 20px;
+    font-size: 13px; font-weight: 700;
+    z-index: 500; opacity: 0;
+    transition: opacity 0.3s; pointer-events: none; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; }
+  .hidden-warning {
+    background: #fff3cd; padding: 8px 10px;
+    border-radius: 8px; font-size: 12px;
+    font-weight: 700; color: #856404; margin-bottom: 10px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ENTRY POPUP -->
+<div class="entry-overlay" id="entryOverlay">
+  <div class="entry-popup">
+    <div class="entry-header">
+      <div class="entry-logo">CHEAP<span>MAP</span></div>
+      <div class="entry-tagline">Local Lowest Price Map</div>
+    </div>
+    <div class="entry-body">
+      <div class="entry-rule">
+        <div class="entry-rule-num">1</div>
+        <div>This app is a <strong>free advertising</strong> platform for <strong>below-average local prices only.</strong><br>Only the lowest-price sellers, please register.</div>
+      </div>
+      <div class="entry-rule">
+        <div class="entry-rule-num">2</div>
+        <div>Pins with <strong>3+ dislikes are hidden.</strong><br>Re-pinning is allowed after 1 day.</div>
+      </div>
+      <div class="entry-rule">
+        <div class="entry-rule-num">3</div>
+        <div><strong>Always verify phone / SNS info</strong> before visiting.</div>
+      </div>
+      <div style="margin-top:14px;padding:10px 12px;background:#f5f5f5;border-radius:8px;font-size:11px;color:#888;line-height:1.6;border-left:3px solid #ccc;">
+        ⚖️ <strong>DISCLAIMER:</strong> All information on CheapMap is user-generated.
+        CheapMap bears no legal responsibility for any loss or damage.
+        Always verify details before visiting.
+      </div>
+      <button class="entry-start" onclick="document.getElementById('entryOverlay').style.display='none'">
+        📍 START CHEAPMAP
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">CHEAP<span>MAP</span></div>
+  <select class="lang-select" onchange="alert('Multi-language support coming soon! 🌍')">
+    <option>🇺🇸 EN</option>
+    <option>🇰🇷 KO</option>
+    <option>🇯🇵 JP</option>
+    <option>🇹🇭 TH</option>
+    <option>🇻🇳 VI</option>
+    <option>🇵🇭 FIL</option>
+    <option>🇲🇾 MY</option>
+  </select>
+</header>
+
+<!-- CATEGORY BAR -->
+<div class="cat-bar">
+  <button class="cat-btn active" onclick="setCategory(this,'All')">🗺️ All</button>
+  <button class="cat-btn" onclick="setCategory(this,'Street Vendor')">🛒 Street Vendor</button>
+  <button class="cat-btn" onclick="setCategory(this,'Mart')">🏪 Mart</button>
+  <button class="cat-btn" onclick="setCategory(this,'Restaurant')">🍜 Restaurant</button>
+  <button class="cat-btn" onclick="setCategory(this,'Automotive')">🚗 Automotive</button>
+  <button class="cat-btn" onclick="setCategory(this,'Home & Garden')">🌿 Home &amp; Garden</button>
+  <button class="cat-btn" onclick="setCategory(this,'Travel & Activity')">✈️ Travel &amp; Activity</button>
+  <button class="cat-btn" onclick="setCategory(this,'Other')">📦 Other</button>
+</div>
+
+<!-- MAP -->
+<div class="map-area" id="mapArea">
+  <div class="map-bg"></div>
+  <div class="road-h" style="top:30%"></div>
+  <div class="road-h" style="top:62%"></div>
+  <div class="road-v" style="left:25%"></div>
+  <div class="road-v" style="left:68%"></div>
+  <button class="fab" id="fabBtn" onclick="togglePinMode()">📍 Drop a Pin</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const CATS     = ['Street Vendor','Mart','Restaurant','Automotive','Home & Garden','Travel & Activity','Other'];
+const CAT_ICON = {'Street Vendor':'🛒','Mart':'🏪','Restaurant':'🍜','Automotive':'🚗','Home & Garden':'🌿','Travel & Activity':'✈️','Other':'📦'};
+
+let pins = [
+  { id:1, x:28, y:38, cat:'Street Vendor', title:'Fruit Stand',  shop:"Tom's Fruit Stand",  price:"Apple 1kg — $2.50",    desc:"Fresh same-day stock! Sale May 1–7. Ugly apples at a great price. Extra $0.20 off for cash payment.", tel:"+1-555-1234", sns:"",           likes:5,  dislikes:1, mine:true  },
+  { id:2, x:52, y:55, cat:'Mart',          title:'Mart Sale',    shop:"Corner Mart Produce", price:"Banana bunch — $1.00", desc:"Imported bananas on special! 10am–6pm. Weekend extra -$0.50. Limit 3 per person.",                  tel:"",           sns:"@cornermart", likes:8,  dislikes:0, mine:false },
+  { id:3, x:70, y:32, cat:'Restaurant',    title:'Cheap Eats',   shop:"Kim's Snack Bar",     price:"Rice cake — $2.00",    desc:"Spicy soup rice cake $2! Free side. Weekday lunch 11am–2pm only. Free drink with takeout orders.",   tel:"+1-555-7777", sns:"",           likes:12, dislikes:2, mine:false },
+];
+let nextId = 10;
+let currentPopup = null, currentForm = null;
+let dragTarget = null, dragOffX = 0, dragOffY = 0;
+let pinModeActive = false;
+let currentCategory = 'All';
+
+function setCategory(btn, cat) {
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentCategory = cat;
+  renderPins();
+}
+
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+function renderPins() {
+  document.querySelectorAll('.pin').forEach(p => p.remove());
+  const map  = document.getElementById('mapArea');
+  const list = currentCategory === 'All' ? pins : pins.filter(p => p.cat === currentCategory);
+  list.forEach(pin => {
+    const el = document.createElement('div');
+    el.className  = 'pin' + (pin.dislikes >= 3 ? ' hidden-pin' : '');
+    el.style.left = pin.x + '%';
+    el.style.top  = pin.y + '%';
+    el.dataset.id = pin.id;
+    const emoji = CAT_ICON[pin.cat] || '📍';
+    const label = pin.title || pin.shop.substring(0,12);
+    el.innerHTML = `<div class="pin-label">${label}</div><div class="pin-icon"><span>${emoji}</span></div>`;
+    el.addEventListener('click', e => { e.stopPropagation(); openPopup(pin, el); });
+    map.appendChild(el);
+  });
+}
+
+function openPopup(pin, pinEl) {
+  closeAll();
+  const map  = document.getElementById('mapArea');
+  const rect = map.getBoundingClientRect();
+  const pr   = pinEl.getBoundingClientRect();
+  const popup = document.createElement('div');
+  popup.className = 'popup';
+  const isHidden = pin.dislikes >= 3;
+  popup.innerHTML = `
+    <div class="popup-header" id="popupDrag">
+      <span class="popup-cat-badge">${CAT_ICON[pin.cat]||'📍'} ${pin.cat}</span>
+      <button class="popup-close" onclick="closeAll()">✕</button>
+    </div>
+    <div class="popup-body">
+      ${isHidden ? '<div class="hidden-warning">⚠️ This pin has 3+ dislikes and is currently hidden.</div>' : ''}
+      <div class="popup-shop-name">${pin.title ? `📌 ${pin.title}` : pin.shop}</div>
+      <div class="popup-shop-name" style="font-size:13px;font-weight:600;color:var(--gray);margin-bottom:4px;">${pin.shop}</div>
+      <div class="popup-price">💰 ${pin.price}</div>
+      <div class="popup-desc">${pin.desc}</div>
+      <div class="popup-contact">
+        ${pin.tel ? `<button class="contact-btn btn-tel">📞 ${pin.tel}</button>` : ''}
+        ${pin.sns ? `<button class="contact-btn btn-sns">💬 ${pin.sns}</button>` : ''}
+      </div>
+      <div class="popup-actions">
+        <button class="like-btn"    onclick="vote(${pin.id},'like')">👍 Like ${pin.likes}</button>
+        <button class="dislike-btn" onclick="vote(${pin.id},'dislike')">👎 Dislike ${pin.dislikes}/3</button>
+      </div>
+      ${pin.mine ? `
+      <div class="owner-btns">
+        <button class="edit-btn btn-edit"   onclick="editPin(${pin.id})">✏️ Edit</button>
+        <button class="edit-btn btn-delete" onclick="deletePin(${pin.id})">🗑️ Delete</button>
+      </div>` : ''}
+    </div>`;
+
+  let px = pr.left - rect.left + 20;
+  let py = pr.top  - rect.top  - 10;
+  if (px + 310 > rect.width)  px = rect.width - 315;
+  if (py + 340 > rect.height) py = rect.height - 345;
+  if (py < 0) py = 10;
+  popup.style.left = px + 'px';
+  popup.style.top  = py + 'px';
+  map.appendChild(popup);
+  currentPopup = popup;
+  makeDraggable(popup, 'popupDrag');
+}
+
+function vote(pinId, type) {
+  const pin = pins.find(p => p.id === pinId);
+  if (!pin) return;
+  if (type === 'like') pin.likes++;
+  else { pin.dislikes++; if (pin.dislikes >= 3) showToast('⚠️ 3 dislikes! Pin hidden for 1 day.'); }
+  renderPins();
+  const pinEl = document.querySelector(`.pin[data-id="${pinId}"]`);
+  if (pinEl) openPopup(pin, pinEl);
+}
+
+function deletePin(pinId) {
+  if (!confirm('Delete this pin?')) return;
+  pins = pins.filter(p => p.id !== pinId);
+  closeAll(); renderPins();
+  showToast('🗑️ Pin deleted.');
+}
+
+function editPin(pinId) {
+  const pin = pins.find(p => p.id === pinId);
+  if (!pin) return;
+  closeAll();
+  const rect = document.getElementById('mapArea').getBoundingClientRect();
+  openPinForm(rect.width/2 - 160, rect.height/2 - 220, pin);
+}
+
+function togglePinMode() {
+  pinModeActive = !pinModeActive;
+  const fab = document.getElementById('fabBtn');
+  if (pinModeActive) {
+    fab.textContent = '✕ Cancel';
+    fab.classList.add('active');
+    document.getElementById('mapArea').style.cursor = 'crosshair';
+    showToast('📍 Click the map to drop a pin!');
+  } else {
+    fab.innerHTML = '📍 Drop a Pin';
+    fab.classList.remove('active');
+    document.getElementById('mapArea').style.cursor = 'default';
+  }
+}
+
+document.getElementById('mapArea').addEventListener('click', function(e) {
+  if (!pinModeActive) return;
+  if (e.target.closest('.pin,.popup,.pin-form,.fab')) return;
+  const rect = this.getBoundingClientRect();
+  const px = ((e.clientX - rect.left) / rect.width)  * 100;
+  const py = ((e.clientY - rect.top)  / rect.height) * 100;
+  pinModeActive = false;
+  const fab = document.getElementById('fabBtn');
+  fab.innerHTML = '📍 Drop a Pin';
+  fab.classList.remove('active');
+  this.style.cursor = 'default';
+  openPinForm(e.clientX - rect.left - 160, e.clientY - rect.top - 60, null, px, py);
+});
+
+function openPinForm(fx, fy, ep, pinX, pinY) {
+  closeAll();
+  const map  = document.getElementById('mapArea');
+  const rect = map.getBoundingClientRect();
+  if (fx < 0) fx = 10;
+  if (fx + 330 > rect.width)  fx = rect.width  - 335;
+  if (fy < 0) fy = 10;
+  if (fy + 520 > rect.height) fy = rect.height - 525;
+
+  const isEdit = !!ep;
+  const catOptions = CATS.map(c =>
+    `<option value="${c}" ${isEdit && ep.cat===c ? 'selected':''}>${CAT_ICON[c]} ${c}</option>`
+  ).join('');
+
+  const form = document.createElement('div');
+  form.className = 'pin-form';
+  form.style.left = fx + 'px';
+  form.style.top  = fy + 'px';
+  form.innerHTML = `
+    <div class="form-header" id="formDrag">
+      <span>${isEdit ? '✏️ Edit Pin' : '📍 New Pin'}</span>
+      <button class="popup-close" onclick="closeAll()">✕</button>
+    </div>
+    <div class="form-body">
+      <div class="form-group">
+        <label>Category</label>
+        <select id="fCat">${catOptions}</select>
+      </div>
+      <div class="form-group">
+        <label>📌 Pin Title * <span style="font-weight:400;color:#aaa;">(max 20 chars — shown on map)</span></label>
+        <input id="fTitle" type="text" placeholder="e.g. Fruit Stand, Mart Sale..." maxlength="20" value="${isEdit?ep.title:''}" style="font-weight:700;">
+        <div class="char-count" id="titleCount">0/20</div>
+      </div>
+      <div class="form-group">
+        <label>Shop Name *</label>
+        <input id="fShop" type="text" placeholder="e.g. Tom's Fruit Stand" value="${isEdit?ep.shop:''}">
+      </div>
+      <div class="form-group">
+        <label>Price *</label>
+        <input id="fPrice" type="text" placeholder="e.g. Apple 1kg — $2.50" value="${isEdit?ep.price:''}">
+      </div>
+      <div class="form-group">
+        <label>Description (max 250 chars)</label>
+        <textarea id="fDesc" rows="3" placeholder="Sale period, hours, extra info..." maxlength="250">${isEdit?ep.desc:''}</textarea>
+        <div class="char-count" id="charCount">0/250</div>
+      </div>
+      <div class="contact-required">* At least one of Phone or SNS is required</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>📞 Phone</label>
+          <input id="fTel" type="text" placeholder="+1-555-0000" value="${isEdit?ep.tel:''}">
+        </div>
+        <div class="form-group">
+          <label>💬 SNS</label>
+          <input id="fSns" type="text" placeholder="@handle" value="${isEdit?ep.sns:''}">
+        </div>
+      </div>
+      <button class="submit-btn" onclick="submitPin(${isEdit?ep.id:'null'},${isEdit?ep.x:pinX},${isEdit?ep.y:pinY})">
+        ${isEdit ? '✅ Save Changes' : '📍 Drop Pin'}
+      </button>
+    </div>`;
+
+  map.appendChild(form);
+  currentForm = form;
+  makeDraggable(form, 'formDrag');
+
+  const titleInput = form.querySelector('#fTitle');
+  const titleCtr   = form.querySelector('#titleCount');
+  const updTitle   = () => { const n=titleInput.value.length; titleCtr.textContent=n+'/20'; titleCtr.className='char-count'+(n>18?' over':''); };
+  titleInput.addEventListener('input', updTitle); updTitle();
+
+  const desc = form.querySelector('#fDesc');
+  const ctr  = form.querySelector('#charCount');
+  const upd  = () => { const n=desc.value.length; ctr.textContent=n+'/250'; ctr.className='char-count'+(n>230?' over':''); };
+  desc.addEventListener('input', upd); upd();
+}
+
+function submitPin(editId, px, py) {
+  const cat   = document.getElementById('fCat').value;
+  const title = document.getElementById('fTitle').value.trim();
+  const shop  = document.getElementById('fShop').value.trim();
+  const price = document.getElementById('fPrice').value.trim();
+  const desc  = document.getElementById('fDesc').value.trim();
+  const tel   = document.getElementById('fTel').value.trim();
+  const sns   = document.getElementById('fSns').value.trim();
+  if (!title)       { showToast('⚠️ Pin title is required.');             return; }
+  if (!shop)        { showToast('⚠️ Shop name is required.');             return; }
+  if (!price)       { showToast('⚠️ Price is required.');                 return; }
+  if (!tel && !sns) { showToast('⚠️ Phone or SNS: at least one needed.'); return; }
+  if (editId !== null) {
+    const pin = pins.find(p => p.id === editId);
+    if (pin) Object.assign(pin, { cat, title, shop, price, desc, tel, sns });
+    showToast('✅ Updated!');
+  } else {
+    pins.push({ id:nextId++, x:px, y:py, cat, title, shop, price, desc, tel, sns, likes:0, dislikes:0, mine:true });
+    showToast('📍 Pin dropped!');
+  }
+  closeAll(); renderPins();
+}
+
+function makeDraggable(el, handleId) {
+  const h = el.querySelector('#'+handleId);
+  if (!h) return;
+  h.addEventListener('mousedown', e => {
+    dragTarget = el;
+    const r = el.getBoundingClientRect();
+    dragOffX = e.clientX - r.left;
+    dragOffY = e.clientY - r.top;
+    e.preventDefault();
+  });
+}
+document.addEventListener('mousemove', e => {
+  if (!dragTarget) return;
+  const mr = dragTarget.parentElement.getBoundingClientRect();
+  let nx = Math.max(0, Math.min(mr.width  - dragTarget.offsetWidth,  e.clientX - mr.left - dragOffX));
+  let ny = Math.max(0, Math.min(mr.height - dragTarget.offsetHeight, e.clientY - mr.top  - dragOffY));
+  dragTarget.style.left = nx+'px'; dragTarget.style.top = ny+'px';
+});
+document.addEventListener('mouseup', () => { dragTarget = null; });
+document.getElementById('mapArea').addEventListener('click', e => {
+  if (!e.target.closest('.popup,.pin-form,.pin') && !pinModeActive) closeAll();
+});
+
+renderPins();
+</script>
+</body>
+</html>
