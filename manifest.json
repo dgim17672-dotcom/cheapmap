@@ -1,0 +1,15 @@
+{
+  "name": "ChipMap",
+  "short_name": "ChipMap",
+  "description": "Find cheap gas stations near you.",
+  "start_url": "/cheapmap/",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#e94560",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "categories": ["maps", "travel", "utilities"],
+  "lang": "en"
+}
